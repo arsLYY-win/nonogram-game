@@ -335,7 +335,7 @@ function applySubgridToMain(region, subgrid) {
 /* =========================
    9. 主盘格子操作
    ========================= */
-function setMainCell(row, col, value, cellEl) {
+/*function setMainCell(row, col, value, cellEl) {
     if (playerGrid[row][col] === value) return;
 
     playerGrid[row][col] = value;
@@ -345,21 +345,40 @@ function setMainCell(row, col, value, cellEl) {
     } else {
         cellEl.classList.remove("filled");
     }
-}
+}*/
+function applyMainCellClass(cellEl, value) {
+    cellEl.classList.remove("filled", "marked-empty");
 
-function handleMainCellAction(row, col, cellEl) {
-    if (drawMode === "fill") {
-        setMainCell(row, col, 1, cellEl);
-    } else if (drawMode === "erase") {
-        setMainCell(row, col, 0, cellEl);
+    if (value === 1) {
+        cellEl.classList.add("filled");
+    } else if (value === 2) {
+        cellEl.classList.add("marked-empty");
     }
 }
 
+function setMainCell(row, col, value, cellEl) {
+    if (playerGrid[row][col] === value) return;
+
+    playerGrid[row][col] = value;
+    applyMainCellClass(cellEl, value);
+}
+
+function handleMainCellAction(row, col, cellEl) {
+    // 左键单击/拖动：逻辑由 drawMode 决定
+    if (drawMode === "fill") {
+        setMainCell(row, col, 1, cellEl); // 变黑
+    } else if (drawMode === "clear") {
+        setMainCell(row, col, 0, cellEl); // 恢复蓝色
+    } else if (drawMode === "mark-empty") {
+        setMainCell(row, col, 2, cellEl); // 变白
+    }
+}
 
 /* =========================
    10. 主盘渲染
    ========================= */
-function renderBoard() {
+//之前的renderboard
+/*function renderBoard() {
     const board = document.getElementById("board");
     board.innerHTML = "";
 
@@ -449,7 +468,123 @@ function renderBoard() {
 
     board.appendChild(fragment);
     refreshRegionHighlight();
+}*/
+function renderBoard() {
+    const board = document.getElementById("board");
+    board.innerHTML = "";
+
+    const fragment = document.createDocumentFragment();
+
+    for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+            const cell = document.createElement("div");
+            cell.classList.add("cell");
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+
+            if (c % 5 === 0) {
+                cell.classList.add("thick-left");
+            }
+
+            if (r % 5 === 0) {
+                cell.classList.add("thick-top");
+            }
+
+            const region = getRegionByCell(r, c);
+            if (region && solvedRegions.has(region.id)) {
+                cell.classList.add("region-solved");
+            }
+
+            applyMainCellClass(cell, playerGrid[r][c]);
+
+            cell.addEventListener("mousedown", (e) => {
+                if (gameFinished) return;
+                e.preventDefault();
+
+                // 提示模式 + 中键：选择局部
+                if (hintMode && secretVerified && e.button === 1) {
+                    const regionUnderCell = getRegionByCell(r, c);
+
+                    if (!regionUnderCell) return;
+                    if (solvedRegions.has(regionUnderCell.id)) return;
+                    if (activeRegion) return;
+
+                    isMiddleSelecting = true;
+                    currentHoverRegionId = regionUnderCell.id;
+                    refreshRegionHighlight();
+                    return;
+                }
+
+                // 左键：单击按当前状态切换；长按拖动则连续填黑
+                if (e.button === 0) {
+                    const currentValue = playerGrid[r][c];
+
+                    isMouseDown = true;
+
+                    if (currentValue === 1) {
+                        // 黑色 -> 蓝色
+                        drawMode = "clear";
+                        setMainCell(r, c, 0, cell);
+                    } else {
+                        // 蓝色/白色 -> 黑色
+                        drawMode = "fill";
+                        setMainCell(r, c, 1, cell);
+                    }
+                }
+
+                // 右键：单击变白；长按拖动恢复蓝色
+                if (e.button === 2) {
+                    isMouseDown = true;
+                    drawMode = "mark-empty";
+                    setMainCell(r, c, 2, cell);
+                }
+            });
+
+            cell.addEventListener("mouseenter", () => {
+                if (!isMouseDown || !drawMode) return;
+
+                // 左键长按始终连续填黑
+                if (drawMode === "fill") {
+                    setMainCell(r, c, 1, cell);
+                }
+
+                // 右键长按要连续恢复蓝色
+                if (drawMode === "mark-empty-drag-clear") {
+                    setMainCell(r, c, 0, cell);
+                }
+
+                if (hintMode && secretVerified && isMiddleSelecting) {
+                    const regionUnderCell = getRegionByCell(r, c);
+
+                    if (regionUnderCell && !solvedRegions.has(regionUnderCell.id)) {
+                        currentHoverRegionId = regionUnderCell.id;
+                    } else {
+                        currentHoverRegionId = null;
+                    }
+
+                    refreshRegionHighlight();
+                }
+            });
+
+            cell.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+            });
+
+            // 右键拖动逻辑：按下后如果发生拖动，就从“标白”切换成“拖动清蓝”
+            cell.addEventListener("mousemove", () => {
+                if (isMouseDown && drawMode === "mark-empty") {
+                    drawMode = "mark-empty-drag-clear";
+                }
+            });
+
+            fragment.appendChild(cell);
+        }
+    }
+
+    board.appendChild(fragment);
+    refreshRegionHighlight();
 }
+
 
 function refreshRegionHighlight() {
     const board = document.getElementById("board");
@@ -567,7 +702,7 @@ function bindUIEvents() {
     checkLocalBtn.addEventListener("click", checkLocalPuzzle);
 
     // 页面任意处鼠标松开
-    document.addEventListener("mouseup", (e) => {
+    /*document.addEventListener("mouseup", (e) => {
         // 主盘停止
         if (e.button === 0 || e.button === 2) {
             isMouseDown = false;
@@ -578,6 +713,25 @@ function bindUIEvents() {
         }
 
         // 中键选择局部
+        if (e.button === 1 && isMiddleSelecting) {
+            if (hintMode && secretVerified && currentHoverRegionId) {
+                openLocalPuzzle(currentHoverRegionId);
+            }
+
+            isMiddleSelecting = false;
+            currentHoverRegionId = null;
+            refreshRegionHighlight();
+        }
+    });*/
+    document.addEventListener("mouseup", (e) => {
+        if (e.button === 0 || e.button === 2) {
+            isMouseDown = false;
+            drawMode = null;
+
+            localIsMouseDown = false;
+            localDrawMode = null;
+        }
+
         if (e.button === 1 && isMiddleSelecting) {
             if (hintMode && secretVerified && currentHoverRegionId) {
                 openLocalPuzzle(currentHoverRegionId);
@@ -730,7 +884,7 @@ function setupLocalLayout(region) {
 /* =========================
    13. 局部题渲染与操作
    ========================= */
-function setLocalCell(row, col, value, cellEl) {
+/*function setLocalCell(row, col, value, cellEl) {
     if (localPlayerGrid[row][col] === value) return;
 
     localPlayerGrid[row][col] = value;
@@ -740,6 +894,22 @@ function setLocalCell(row, col, value, cellEl) {
     } else {
         cellEl.classList.remove("filled");
     }
+}*/
+function applyLocalCellClass(cellEl, value) {
+    cellEl.classList.remove("filled", "marked-empty");
+
+    if (value === 1) {
+        cellEl.classList.add("filled");
+    } else if (value === 2) {
+        cellEl.classList.add("marked-empty");
+    }
+}
+
+function setLocalCell(row, col, value, cellEl) {
+    if (localPlayerGrid[row][col] === value) return;
+
+    localPlayerGrid[row][col] = value;
+    applyLocalCellClass(cellEl, value);
 }
 
 function handleLocalCellAction(row, col, cellEl) {
@@ -750,7 +920,7 @@ function handleLocalCellAction(row, col, cellEl) {
     }
 }
 
-function renderLocalPuzzle() {
+/*function renderLocalPuzzle() {
     const board = document.getElementById("local-board");
     board.innerHTML = "";
 
@@ -816,6 +986,92 @@ function renderLocalPuzzle() {
     }
 
     board.appendChild(fragment);
+}*/
+function renderLocalPuzzle() {
+    const board = document.getElementById("local-board");
+    board.innerHTML = "";
+
+    const localSize = localAnswerGrid.length;
+
+    let cellSize = 28;
+    if (localSize === 15) cellSize = 24;
+    if (localSize === 5) cellSize = 34;
+
+    const fragment = document.createDocumentFragment();
+
+    for (let r = 0; r < localSize; r++) {
+        for (let c = 0; c < localSize; c++) {
+            const cell = document.createElement("div");
+            cell.classList.add("local-cell");
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            cell.style.width = `${cellSize}px`;
+            cell.style.height = `${cellSize}px`;
+
+            if (c % 5 === 0) {
+                cell.classList.add("local-thick-left");
+            }
+
+            if (r % 5 === 0) {
+                cell.classList.add("local-thick-top");
+            }
+
+            applyLocalCellClass(cell, localPlayerGrid[r][c]);
+
+            cell.addEventListener("mousedown", (e) => {
+                if (gameFinished) return;
+                e.preventDefault();
+
+                // 左键：黑->蓝；蓝/白->黑
+                if (e.button === 0) {
+                    const currentValue = localPlayerGrid[r][c];
+
+                    localIsMouseDown = true;
+
+                    if (currentValue === 1) {
+                        localDrawMode = "clear";
+                        setLocalCell(r, c, 0, cell);
+                    } else {
+                        localDrawMode = "fill";
+                        setLocalCell(r, c, 1, cell);
+                    }
+                }
+
+                // 右键：单击变白
+                if (e.button === 2) {
+                    localIsMouseDown = true;
+                    localDrawMode = "mark-empty";
+                    setLocalCell(r, c, 2, cell);
+                }
+            });
+
+            cell.addEventListener("mouseenter", () => {
+                if (!localIsMouseDown || !localDrawMode) return;
+
+                if (localDrawMode === "fill") {
+                    setLocalCell(r, c, 1, cell);
+                }
+
+                if (localDrawMode === "mark-empty-drag-clear") {
+                    setLocalCell(r, c, 0, cell);
+                }
+            });
+
+            cell.addEventListener("mousemove", () => {
+                if (localIsMouseDown && localDrawMode === "mark-empty") {
+                    localDrawMode = "mark-empty-drag-clear";
+                }
+            });
+
+            cell.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+            });
+
+            fragment.appendChild(cell);
+        }
+    }
+
+    board.appendChild(fragment);
 }
 
 function checkLocalPuzzle() {
@@ -823,7 +1079,8 @@ function checkLocalPuzzle() {
 
     for (let r = 0; r < localAnswerGrid.length; r++) {
         for (let c = 0; c < localAnswerGrid[0].length; c++) {
-            if (localPlayerGrid[r][c] !== localAnswerGrid[r][c]) {
+            const localPlayerIsBlack = localPlayerGrid[r][c] === 1 ? 1 : 0;
+            if (localPlayerIsBlack !== localAnswerGrid[r][c]) {
                 document.getElementById("local-result").textContent = "局部还没解对，请继续。";
                 document.getElementById("local-result").style.color = "#c0392b";
                 return;
@@ -877,7 +1134,8 @@ function checkMainPuzzle() {
 
     for (let r = 0; r < SIZE; r++) {
         for (let c = 0; c < SIZE; c++) {
-            if (playerGrid[r][c] !== answerGrid[r][c]) {
+            const playerIsBlack = playerGrid[r][c] === 1 ? 1 : 0;
+            if (playerIsBlack !== answerGrid[r][c]) {
                 const resultEl = document.getElementById("main-check-result");
                 resultEl.textContent = "未全部正确填涂";
                 resultEl.style.color = "#c0392b";
