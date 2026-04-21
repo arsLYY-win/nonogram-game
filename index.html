@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>数织游戏</title>
+    <link rel="stylesheet" href="styles/style.css" />
+</head>
+
+<body>
+    <h1>数织小游戏（25×25）</h1>
+
+    <div id="top-controls">
+        <div id="timer-bar">
+            <span>计时：</span>
+            <span id="timer-text">00:00</span>
+        </div>
+
+        <div id="zoom-controls">
+            <button id="zoom-out-btn" class="zoom-btn">－</button>
+            <span id="zoom-label">100%</span>
+            <button id="zoom-in-btn" class="zoom-btn">＋</button>
+        </div>
+    </div>
+
+    <p>左键填涂，右键擦除；提示模式下按住鼠标中键选择局部</p>
+
+    <div id="page-layout">
+        <div id="main-area">
+            <div id="game-wrapper">
+                <div id="top-left">
+                    <img id="hint-image" class="hidden" src="cg_hint.jpg" alt="口令提示图" />
+                </div>
+                <div id="col-clues"></div>
+                <div id="row-clues"></div>
+                <div id="board"></div>
+            </div>
+        </div>
+
+        <aside id="sidebar">
+            <div class="panel">
+                <h2>操作</h2>
+                <button id="hint-btn" class="action-btn">提示</button>
+                <button id="exit-hint-btn" class="action-btn secondary-btn">退出提示模式</button>
+                <button id="check-main-btn" class="action-btn">核对整题</button>
+                <p id="hint-status">当前未进入提示模式</p>
+                <p id="main-check-result"></p>
+            </div>
+
+            <div class="panel" id="secret-panel">
+                <h2>口令验证</h2>
+                <p>请输入四个汉字口令并按 Enter：</p>
+                <input id="secret-input" type="text" maxlength="4" placeholder="请输入口令" />
+                <p id="secret-msg"></p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- 局部题弹层 -->
+    <div id="local-modal" class="hidden">
+        <div id="local-modal-backdrop"></div>
+
+        <div id="local-modal-content">
+            <div class="modal-header">
+                <h2 id="local-title">局部数织</h2>
+                <button id="close-local-btn" class="action-btn secondary-btn">关闭</button>
+            </div>
+
+            <p id="local-desc"></p>
+
+            <div id="local-wrapper">
+                <div id="local-top-left"></div>
+                <div id="local-col-clues"></div>
+                <div id="local-row-clues"></div>
+                <div id="local-board"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="check-local-btn" class="action-btn">核对局部</button>
+                <span id="local-result"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 整题完成弹窗 -->
+    <div id="finish-modal" class="hidden">
+        <div id="finish-backdrop"></div>
+        <div id="finish-content">
+            <h2>任务完成</h2>
+            <p id="finish-message">任务完成，用时不到0.01个火星年，你就是世界上最聪明的人！</p>
+            <button id="finish-close-btn" class="action-btn">太强了</button>
+        </div>
+    </div>
+
+    <!-- Steam风格成就提示 -->
+    <div id="achievement-toast" class="hidden">
+        <div class="achievement-title">成就解锁</div>
+        <div class="achievement-name">一根直肠通大脑</div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,553 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    text-align: center;
+    background: #fafafa;
+}
+
+h1 {
+    margin-bottom: 8px;
+}
+
+p {
+    margin-top: 0;
+}
+
+#page-layout {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
+    margin-top: 20px;
+}
+
+/* 左侧主区域 */
+#main-area {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 1000px;
+}
+
+/* 主盘布局 */
+#game-wrapper {
+    display: grid;
+    grid-template-columns: 120px auto;
+    grid-template-rows: 120px auto;
+    justify-content: center;
+    align-items: start;
+}
+
+#top-left {
+    width: 120px;
+    height: 120px;
+    border: 2px solid #000;
+    box-sizing: border-box;
+    background: #f0f0f0;
+}
+
+#col-clues {
+    display: grid;
+    grid-template-columns: repeat(25, 28px);
+    grid-template-rows: 120px;
+    border-top: 2px solid #000;
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
+    box-sizing: border-box;
+}
+
+#row-clues {
+    display: grid;
+    grid-template-columns: 120px;
+    grid-template-rows: repeat(25, 28px);
+    border-left: 2px solid #000;
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
+    box-sizing: border-box;
+}
+
+#board {
+    display: grid;
+    grid-template-columns: repeat(25, 28px);
+    grid-template-rows: repeat(25, 28px);
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
+    box-sizing: border-box;
+}
+
+.cell {
+    width: 28px;
+    height: 28px;
+    background: #fff;
+    border-left: 1px solid #222;
+    border-top: 1px solid #222;
+    box-sizing: border-box;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.cell.filled {
+    background: #000;
+    border-left: 1px solid #fff;
+    border-top: 1px solid #fff;
+}
+
+.cell.thick-left {
+    border-left: 3px solid #000;
+}
+
+.cell.thick-top {
+    border-top: 3px solid #000;
+}
+
+/* 提示模式下，高亮可选区域 */
+.cell.region-hover {
+    background: #dff3ff;
+}
+
+.cell.region-hover.filled {
+    background: #444;
+}
+
+.cell.region-solved {
+    box-shadow: inset 0 0 0 2px #20a35a;
+}
+
+/* 行列提示 */
+.row-clue {
+    width: 120px;
+    height: 28px;
+    border-left: 1px solid #222;
+    border-top: 1px solid #222;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    background: #fff;
+}
+
+.row-clue.thick-top {
+    border-top: 3px solid #000;
+}
+
+.col-clue {
+    width: 28px;
+    height: 120px;
+    border-left: 1px solid #222;
+    border-top: 1px solid #222;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    background: #fff;
+    line-height: 1.05;
+}
+
+.col-clue.thick-left {
+    border-left: 3px solid #000;
+}
+
+/* 右侧栏 */
+#sidebar {
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    text-align: left;
+}
+
+.panel {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.panel h2 {
+    margin-top: 0;
+    font-size: 18px;
+}
+
+.action-btn {
+    display: inline-block;
+    min-width: 120px;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 10px;
+    background: #1f6feb;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+.action-btn:hover {
+    opacity: 0.92;
+}
+
+.secondary-btn {
+    background: #666;
+}
+
+#secret-panel {
+    display: none;
+}
+
+#secret-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    font-size: 16px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+#secret-msg {
+    min-height: 20px;
+    color: #c0392b;
+    font-weight: bold;
+}
+
+.small-tip {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
+}
+
+#region-list {
+    margin: 0;
+    padding-left: 18px;
+    line-height: 1.8;
+}
+
+/* 局部弹层 */
+.hidden {
+    display: none !important;
+}
+
+#local-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+}
+
+#local-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+#local-modal-content {
+    position: relative;
+    z-index: 1000;
+    width: fit-content;
+    max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    margin: 20px auto;
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    text-align: center;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.modal-header h2 {
+    margin: 0;
+}
+
+.modal-actions {
+    margin-top: 18px;
+}
+
+#local-result {
+    margin-left: 12px;
+    font-weight: bold;
+}
+
+/* 局部题区域：尺寸由 JS 用 style 注入 */
+#local-wrapper {
+    display: grid;
+    justify-content: center;
+    align-items: start;
+    margin-top: 12px;
+}
+
+#local-top-left,
+#local-col-clues,
+#local-row-clues,
+#local-board {
+    box-sizing: border-box;
+}
+
+.local-cell {
+    background: #fff;
+    border-left: 1px solid #222;
+    border-top: 1px solid #222;
+    box-sizing: border-box;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.local-cell.filled {
+    background: #000;
+    border-left: 1px solid #fff;
+    border-top: 1px solid #fff;
+}
+
+.local-cell.local-thick-left {
+    border-left: 3px solid #000;
+}
+
+.local-cell.local-thick-top {
+    border-top: 3px solid #000;
+}
+
+.cell.filled.thick-left {
+    border-left: 1px solid #fff;
+}
+
+.cell.filled.thick-top {
+    border-top: 1px solid #fff;
+}
+
+.local-cell.filled.local-thick-left {
+    border-left: 1px solid #fff;
+}
+
+.local-cell.filled.local-thick-top {
+    border-top: 1px solid #fff;
+}
+
+.local-row-clue,
+.local-col-clue {
+    background: #fff;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+
+.local-row-clue {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+    border-left: 1px solid #222;
+    border-top: 1px solid #222;
+}
+
+.local-col-clue {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 6px;
+    border-left: 1px solid #222;
+    border-top: 1px solid #222;
+    line-height: 1.05;
+}
+
+.local-row-clue.local-thick-top {
+    border-top: 3px solid #000;
+}
+
+.local-col-clue.local-thick-left {
+    border-left: 3px solid #000;
+}
+
+@media (max-width: 1200px) {
+    #page-layout {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #sidebar {
+        width: min(90vw, 700px);
+    }
+}
+
+#timer-bar {
+    font-size: 14px;
+    color: #444;
+    margin-top: -4px;
+    margin-bottom: 12px;
+}
+
+#timer-text {
+    font-weight: bold;
+}
+
+#top-left {
+    width: 120px;
+    height: 120px;
+    border: 2px solid #000;
+    box-sizing: border-box;
+    background: #f0f0f0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#hint-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+#main-check-result {
+    min-height: 22px;
+    margin-top: 8px;
+    font-weight: bold;
+    color: #c0392b;
+}
+
+/* 整题完成弹窗 */
+#finish-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+}
+
+#finish-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.58);
+}
+
+#finish-content {
+    position: relative;
+    z-index: 1201;
+    width: min(90vw, 520px);
+    margin: 18vh auto 0;
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+    text-align: center;
+}
+
+#finish-content h2 {
+    margin-top: 0;
+    margin-bottom: 14px;
+}
+
+#finish-message {
+    font-size: 18px;
+    line-height: 1.7;
+    margin-bottom: 18px;
+}
+
+#top-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+    margin-top: -4px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+#zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #444;
+}
+
+.zoom-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: #1f6feb;
+    color: #fff;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.zoom-btn:hover {
+    opacity: 0.92;
+}
+
+#zoom-label {
+    min-width: 48px;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* 右下角成就提示 */
+#achievement-toast {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 280px;
+    background: linear-gradient(180deg, #1c1f26, #111318);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    z-index: 1300;
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+}
+
+#achievement-toast.show {
+    animation: toastInOut 5s ease forwards;
+}
+
+.achievement-title {
+    font-size: 13px;
+    color: #9ecbff;
+    margin-bottom: 6px;
+}
+
+.achievement-name {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+@keyframes toastInOut {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    10% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    80% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
