@@ -13,6 +13,11 @@ p {
     margin-top: 0;
 }
 
+/* 新增变量背景色相关 */
+:root {
+    --board-bg: rgba(17, 118, 251, 0.945);
+}
+
 #page-layout {
     display: flex;
     justify-content: center;
@@ -36,6 +41,12 @@ p {
     grid-template-rows: 120px auto;
     justify-content: center;
     align-items: start;
+
+    background: rgba(10, 30, 80, 0.3);
+    /* 深蓝+30%透明 */
+    padding: 10px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 #top-left {
@@ -43,7 +54,7 @@ p {
     height: 120px;
     border: 2px solid #000;
     box-sizing: border-box;
-    background: #f0f0f0;
+    background: var(--board-bg);
 }
 
 #col-clues {
@@ -78,7 +89,7 @@ p {
 .cell {
     width: 28px;
     height: 28px;
-    background: #fff;
+    background: var(--board-bg);
     border-left: 1px solid #222;
     border-top: 1px solid #222;
     box-sizing: border-box;
@@ -92,6 +103,21 @@ p {
     background: #000;
     border-left: 1px solid #fff;
     border-top: 1px solid #fff;
+}
+
+.cell.marked-empty {
+    background: #fff;
+    border-left: 1px solid #222;
+    border-top: 1px solid #222;
+}
+
+/* 白色格子仍保持普通细边 */
+.cell.marked-empty.thick-left {
+    border-left: 1px solid #222;
+}
+
+.cell.marked-empty.thick-top {
+    border-top: 1px solid #222;
 }
 
 .cell.thick-left {
@@ -128,7 +154,7 @@ p {
     padding-right: 8px;
     font-size: 14px;
     font-weight: bold;
-    background: #fff;
+    background: var(--board-bg);
 }
 
 .row-clue.thick-top {
@@ -148,7 +174,7 @@ p {
     padding-bottom: 6px;
     font-size: 14px;
     font-weight: bold;
-    background: #fff;
+    background: var(--board-bg);
     line-height: 1.05;
 }
 
@@ -299,13 +325,27 @@ p {
 }
 
 .local-cell {
-    background: #fff;
+    background: var(--board-bg);
     border-left: 1px solid #222;
     border-top: 1px solid #222;
     box-sizing: border-box;
     cursor: pointer;
     user-select: none;
     -webkit-user-select: none;
+}
+
+.local-cell.marked-empty {
+    background: #fff;
+    border-left: 1px solid #222;
+    border-top: 1px solid #222;
+}
+
+.local-cell.marked-empty.local-thick-left {
+    border-left: 1px solid #222;
+}
+
+.local-cell.marked-empty.local-thick-top {
+    border-top: 1px solid #222;
 }
 
 .local-cell.filled {
@@ -340,7 +380,7 @@ p {
 
 .local-row-clue,
 .local-col-clue {
-    background: #fff;
+    background: var(--board-bg);
     font-weight: bold;
     box-sizing: border-box;
 }
