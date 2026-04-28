@@ -4,6 +4,8 @@ let zoomScale = 1.0;
 const MIN_ZOOM = 0.6;
 const MAX_ZOOM = 1.8;
 const ZOOM_STEP = 0.1;
+let dragButton = null; // "left" | "right" | null
+let localDragButton = null;
 let timerSeconds = 0;
 let timerInterval = null;
 let gameFinished = false;
@@ -126,6 +128,7 @@ function initGame() {
     initPlayerGrid();
     bindUIEvents();
     renderMainClues();
+    renderSideLabels();
     renderBoard();
     updateHintUI();
     updateTimerUI();
@@ -236,6 +239,7 @@ function renderRowClues(containerId, grid, isLocal, cellSize = 28, clueWidth = 1
 
     for (let r = 0; r < size; r++) {
         const clueEl = document.createElement("div");
+        clueEl.dataset.row = r;
         clueEl.className = isLocal ? "local-row-clue" : "row-clue";
         clueEl.style.height = `${cellSize}px`;
         clueEl.style.width = `${clueWidth}px`;
@@ -258,6 +262,7 @@ function renderColClues(containerId, grid, isLocal, cellSize = 28, clueHeight = 
 
     for (let c = 0; c < size; c++) {
         const clueEl = document.createElement("div");
+        clueEl.dataset.col = c;
         clueEl.className = isLocal ? "local-col-clue" : "col-clue";
         clueEl.style.width = `${cellSize}px`;
         clueEl.style.height = `${clueHeight}px`;
@@ -348,21 +353,52 @@ function applySubgridToMain(region, subgrid) {
 }*/
 function applyMainCellClass(cellEl, value) {
     cellEl.classList.remove("filled", "marked-empty");
+    cellEl.textContent = "";
 
     if (value === 1) {
         cellEl.classList.add("filled");
-    } else if (value === 2) {
+        cellEl.textContent = "⬛";
+    }
+
+    if (value === 2) {
         cellEl.classList.add("marked-empty");
+        cellEl.textContent = "✗";
     }
 }
 
 function setMainCell(row, col, value, cellEl) {
     if (playerGrid[row][col] === value) return;
-
     playerGrid[row][col] = value;
     applyMainCellClass(cellEl, value);
 }
+/*加高亮函数*/
+function clearHoverLine() {
+    document.querySelectorAll(".hover-line").forEach((el) => {
+        el.classList.remove("hover-line");
+    });
+}
 
+function highlightLine(row, col) {
+    clearHoverLine();
+
+    document.querySelectorAll(`.cell[data-row="${row}"]`).forEach((el) => {
+        el.classList.add("hover-line");
+    });
+
+    document.querySelectorAll(`.cell[data-col="${col}"]`).forEach((el) => {
+        el.classList.add("hover-line");
+    });
+
+    const rowClue = document.querySelector(`.row-clue[data-row="${row}"]`);
+    const colClue = document.querySelector(`.col-clue[data-col="${col}"]`);
+    const rightLabel = document.querySelector(`.right-row-label[data-row="${row}"]`);
+    const bottomLabel = document.querySelector(`.bottom-col-label[data-col="${col}"]`);
+
+    if (rowClue) rowClue.classList.add("hover-line");
+    if (colClue) colClue.classList.add("hover-line");
+    if (rightLabel) rightLabel.classList.add("hover-line");
+    if (bottomLabel) bottomLabel.classList.add("hover-line");
+}
 function handleMainCellAction(row, col, cellEl) {
     // 左键单击/拖动：逻辑由 drawMode 决定
     if (drawMode === "fill") {
@@ -497,60 +533,31 @@ function renderBoard() {
 
             applyMainCellClass(cell, playerGrid[r][c]);
 
-            cell.addEventListener("mousedown", (e) => {
-                if (gameFinished) return;
-                e.preventDefault();
+            cell.addEventListener("mouseenter", () => {
+                highlightLine(r, c);
 
-                // 提示模式 + 中键：选择局部
-                if (hintMode && secretVerified && e.button === 1) {
-                    const regionUnderCell = getRegionByCell(r, c);
+                if (!isMouseDown || !dragButton) return;
 
-                    if (!regionUnderCell) return;
-                    if (solvedRegions.has(regionUnderCell.id)) return;
-                    if (activeRegion) return;
+                const current = playerGrid[r][c];
 
-                    isMiddleSelecting = true;
-                    currentHoverRegionId = regionUnderCell.id;
-                    refreshRegionHighlight();
-                    return;
-                }
-
-                // 左键：单击按当前状态切换；长按拖动则连续填黑
-                if (e.button === 0) {
-                    const currentValue = playerGrid[r][c];
-
-                    isMouseDown = true;
-
-                    if (currentValue === 1) {
-                        // 黑色 -> 蓝色
-                        drawMode = "clear";
+                // 左键长按
+                if (dragButton === "left") {
+                    if (current === 1) {
                         setMainCell(r, c, 0, cell);
-                    } else {
-                        // 蓝色/白色 -> 黑色
-                        drawMode = "fill";
+                    } else if (current === 0) {
                         setMainCell(r, c, 1, cell);
                     }
+                    // current === 2 时保持不变
                 }
 
-                // 右键：单击变白；长按拖动恢复蓝色
-                if (e.button === 2) {
-                    isMouseDown = true;
-                    drawMode = "mark-empty";
-                    setMainCell(r, c, 2, cell);
-                }
-            });
-
-            cell.addEventListener("mouseenter", () => {
-                if (!isMouseDown || !drawMode) return;
-
-                // 左键长按始终连续填黑
-                if (drawMode === "fill") {
-                    setMainCell(r, c, 1, cell);
-                }
-
-                // 右键长按要连续恢复蓝色
-                if (drawMode === "mark-empty-drag-clear") {
-                    setMainCell(r, c, 0, cell);
+                // 右键长按
+                if (dragButton === "right") {
+                    if (current === 0) {
+                        setMainCell(r, c, 2, cell);
+                    } else if (current === 2) {
+                        setMainCell(r, c, 0, cell);
+                    }
+                    // current === 1 时保持不变
                 }
 
                 if (hintMode && secretVerified && isMiddleSelecting) {
@@ -566,15 +573,57 @@ function renderBoard() {
                 }
             });
 
-            cell.addEventListener("contextmenu", (e) => {
-                e.preventDefault();
+            cell.addEventListener("mouseleave", () => {
+                // 不在这里 clear，避免跨格移动时闪烁
             });
 
-            // 右键拖动逻辑：按下后如果发生拖动，就从“标白”切换成“拖动清蓝”
-            cell.addEventListener("mousemove", () => {
-                if (isMouseDown && drawMode === "mark-empty") {
-                    drawMode = "mark-empty-drag-clear";
+            cell.addEventListener("mousedown", (e) => {
+                if (gameFinished) return;
+                e.preventDefault();
+
+                // 提示模式 + 中键
+                if (hintMode && secretVerified && e.button === 1) {
+                    const regionUnderCell = getRegionByCell(r, c);
+
+                    if (!regionUnderCell) return;
+                    if (solvedRegions.has(regionUnderCell.id)) return;
+                    if (activeRegion) return;
+
+                    isMiddleSelecting = true;
+                    currentHoverRegionId = regionUnderCell.id;
+                    refreshRegionHighlight();
+                    return;
                 }
+
+                const current = playerGrid[r][c];
+
+                // 左键单击
+                if (e.button === 0) {
+                    isMouseDown = true;
+                    dragButton = "left";
+
+                    if (current === 1) {
+                        setMainCell(r, c, 0, cell);
+                    } else {
+                        setMainCell(r, c, 1, cell);
+                    }
+                }
+
+                // 右键单击
+                if (e.button === 2) {
+                    isMouseDown = true;
+                    dragButton = "right";
+
+                    if (current === 2) {
+                        setMainCell(r, c, 0, cell);
+                    } else {
+                        setMainCell(r, c, 2, cell);
+                    }
+                }
+            });
+
+            cell.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
             });
 
             fragment.appendChild(cell);
@@ -582,6 +631,11 @@ function renderBoard() {
     }
 
     board.appendChild(fragment);
+
+    board.addEventListener("mouseleave", () => {
+        clearHoverLine();
+    });
+
     refreshRegionHighlight();
 }
 
@@ -726,10 +780,12 @@ function bindUIEvents() {
     document.addEventListener("mouseup", (e) => {
         if (e.button === 0 || e.button === 2) {
             isMouseDown = false;
-            drawMode = null;
+            //drawMode = null;
+            dragButton = null;
 
             localIsMouseDown = false;
-            localDrawMode = null;
+            //localDrawMode = null;
+            localDragButton = null;
         }
 
         if (e.button === 1 && isMiddleSelecting) {
@@ -816,6 +872,7 @@ function closeLocalModal() {
     document.getElementById("local-modal").classList.add("hidden");
     document.getElementById("local-result").textContent = "";
     activeRegion = null;
+    localDragButton = null;
     localAnswerGrid = [];
     localPlayerGrid = [];
     localIsMouseDown = false;
@@ -879,7 +936,46 @@ function setupLocalLayout(region) {
     renderRowClues("local-row-clues", localAnswerGrid, true, cellSize, clueWidth);
     renderColClues("local-col-clues", localAnswerGrid, true, cellSize, clueBand);
 }
+//新增右侧/下方编号渲染
+function renderSideLabels() {
+    const rightLabels = document.getElementById("right-row-labels");
+    const bottomLabels = document.getElementById("bottom-col-labels");
 
+    rightLabels.innerHTML = "";
+    bottomLabels.innerHTML = "";
+
+    const rightFrag = document.createDocumentFragment();
+    const bottomFrag = document.createDocumentFragment();
+
+    for (let r = 0; r < SIZE; r++) {
+        const label = document.createElement("div");
+        label.className = "side-label right-row-label";
+        label.dataset.row = r;
+        label.textContent = r + 1;
+
+        if (r % 5 === 0) {
+            label.style.borderTop = "3px solid #000";
+        }
+
+        rightFrag.appendChild(label);
+    }
+
+    for (let c = 0; c < SIZE; c++) {
+        const label = document.createElement("div");
+        label.className = "side-label bottom-label bottom-col-label";
+        label.dataset.col = c;
+        label.textContent = c + 1;
+
+        if (c % 5 === 0) {
+            label.style.borderLeft = "3px solid #000";
+        }
+
+        bottomFrag.appendChild(label);
+    }
+
+    rightLabels.appendChild(rightFrag);
+    bottomLabels.appendChild(bottomFrag);
+}
 
 /* =========================
    13. 局部题渲染与操作
@@ -897,12 +993,24 @@ function setupLocalLayout(region) {
 }*/
 function applyLocalCellClass(cellEl, value) {
     cellEl.classList.remove("filled", "marked-empty");
+    cellEl.textContent = "";
 
     if (value === 1) {
         cellEl.classList.add("filled");
-    } else if (value === 2) {
-        cellEl.classList.add("marked-empty");
+        cellEl.textContent = "⬛";
     }
+
+    if (value === 2) {
+        cellEl.classList.add("marked-empty");
+        cellEl.textContent = "✗";
+    }
+}
+
+function setLocalCell(row, col, value, cellEl) {
+    if (localPlayerGrid[row][col] === value) return;
+
+    localPlayerGrid[row][col] = value;
+    applyLocalCellClass(cellEl, value);
 }
 
 function setLocalCell(row, col, value, cellEl) {
@@ -1022,44 +1130,50 @@ function renderLocalPuzzle() {
                 if (gameFinished) return;
                 e.preventDefault();
 
-                // 左键：黑->蓝；蓝/白->黑
+                const current = localPlayerGrid[r][c];
+
                 if (e.button === 0) {
-                    const currentValue = localPlayerGrid[r][c];
-
                     localIsMouseDown = true;
+                    localDragButton = "left";
 
-                    if (currentValue === 1) {
-                        localDrawMode = "clear";
+                    if (current === 1) {
                         setLocalCell(r, c, 0, cell);
                     } else {
-                        localDrawMode = "fill";
                         setLocalCell(r, c, 1, cell);
                     }
                 }
 
-                // 右键：单击变白
                 if (e.button === 2) {
                     localIsMouseDown = true;
-                    localDrawMode = "mark-empty";
-                    setLocalCell(r, c, 2, cell);
+                    localDragButton = "right";
+
+                    if (current === 2) {
+                        setLocalCell(r, c, 0, cell);
+                    } else {
+                        setLocalCell(r, c, 2, cell);
+                    }
                 }
             });
 
             cell.addEventListener("mouseenter", () => {
-                if (!localIsMouseDown || !localDrawMode) return;
+                if (!localIsMouseDown || !localDragButton) return;
 
-                if (localDrawMode === "fill") {
-                    setLocalCell(r, c, 1, cell);
+                const current = localPlayerGrid[r][c];
+
+                if (localDragButton === "left") {
+                    if (current === 1) {
+                        setLocalCell(r, c, 0, cell);
+                    } else if (current === 0) {
+                        setLocalCell(r, c, 1, cell);
+                    }
                 }
 
-                if (localDrawMode === "mark-empty-drag-clear") {
-                    setLocalCell(r, c, 0, cell);
-                }
-            });
-
-            cell.addEventListener("mousemove", () => {
-                if (localIsMouseDown && localDrawMode === "mark-empty") {
-                    localDrawMode = "mark-empty-drag-clear";
+                if (localDragButton === "right") {
+                    if (current === 0) {
+                        setLocalCell(r, c, 2, cell);
+                    } else if (current === 2) {
+                        setLocalCell(r, c, 0, cell);
+                    }
                 }
             });
 
